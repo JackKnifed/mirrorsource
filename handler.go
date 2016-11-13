@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -19,6 +19,10 @@ import (
 // 	download() error
 // }
 
+func main() {
+	return
+}
+
 type versionType struct {
 	fmt  string   `json:"fmt"`
 	cur  string   `json:"cur"`
@@ -27,27 +31,27 @@ type versionType struct {
 
 func stringSubtraction(s string, chunks []string) ([]string, error) {
 	var result []string
-	remaining := strings.TrimLeft(chunks[0], s)
 	var i int
-	if remaining != s {
+	if strings.HasPrefix(s, chunks[0]) {
+		s = strings.TrimPrefix(s, chunks[0])
 		i = 1
 	}
 
 	for ; i < len(chunks); i++ {
-		if !strings.Contains(remaining, chunks[i]) {
-			return []string{}, errors.New(`chunk [%q] not found in [%q]
-			original string [%q]
+		if !strings.Contains(s, chunks[i]) {
+			return []string{}, fmt.Errorf(`chunk [%q] not found in [%q]
+			so far have %#v
 			cut chunks %#v
 			parts gotten %#v`,
-				chunks[i], remaining, s, chunks, result)
+				chunks[i], s, result, chunks, result)
 		}
-		parts := strings.SplitN(remaining, chunks[i], 2)
+		parts := strings.SplitN(s, chunks[i], 2)
 		result = append(result, parts[0])
-		remaining = parts[1]
+		s = parts[1]
 	}
 
-	if remaining != "" {
-		result = append(result, remaining)
+	if s != "" {
+		result = append(result, s)
 	}
 
 	return result, nil
@@ -55,20 +59,21 @@ func stringSubtraction(s string, chunks []string) ([]string, error) {
 
 func stringsToInts(s []string) ([]int, error) {
 	var results []int
-	for _, s := range strings {
+	for _, s := range s {
 		i, err := strconv.Atoi(s)
 		if err != nil {
-			return []int{}, errors.New("failed - string [%q] is not an int - %v", s, err)
+			return []int{}, fmt.Errorf("failed - string [%q] is not an int - %v", s, err)
 		}
 		results = append(results, i)
 	}
-	return nil, results
+	return results, nil
 }
 
 func prefixArray(arr []string, prefix string) (out []string) {
 	for _, s := range arr {
 		out = append(out, prefix+s)
 	}
+	return
 }
 
 func addFmt(numbers []int, format []string) []string {
@@ -83,12 +88,12 @@ func addNum(numbers []int, format []string) (out []string) {
 	if len(format) < 1 {
 		return []string{
 			"0",
-			strconf.Itoa(numbers[0]),
+			strconv.Itoa(numbers[0]),
 		}
 	}
 
 	childParts := addFmt(numbers[1:], format)
-	out := []string{"0" + childParts[0]}
+	out = []string{"0" + childParts[0]}
 	out = append(out, strconv.Itoa(numbers[0]+1)+childParts[0])
 	out = append(out, prefixArray(childParts[1:], strconv.Itoa(numbers[0]))...)
 	return out
@@ -112,7 +117,7 @@ func (v versionType) nextPossible() ([]string, error) {
 	} else {
 		possible = addNum(vParts, fmtChunks)[1:]
 	}
-	return possible,nil
+	return possible, nil
 }
 
 type outputType struct {
