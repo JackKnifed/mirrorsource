@@ -77,7 +77,7 @@ func prefixArray(arr []string, prefix string) (out []string) {
 }
 
 func addFmt(numbers []int, format []string) []string {
-	if len(numbers) > 0 {
+	if len(numbers) < 1 {
 		return []string{format[0]}
 	}
 	return prefixArray(addNum(numbers, format[1:]), format[0])
@@ -86,6 +86,7 @@ func addFmt(numbers []int, format []string) []string {
 func addNum(numbers []int, format []string) (out []string) {
 	// if there is no formatting below, simply return the current number
 	if len(format) < 1 {
+		fmt.Printf("%#v %#v", "0", strconv.Itoa(numbers[0]))
 		return []string{
 			"0",
 			strconv.Itoa(numbers[0]),
@@ -99,7 +100,7 @@ func addNum(numbers []int, format []string) (out []string) {
 	return out
 }
 
-func (v versionType) nextPossible() ([]string, error) {
+func (v versionType) possibleUpgrades() ([]string, error) {
 	fmtChunks := strings.Split(v.fmt, "%v")
 
 	vPartsString, err := stringSubtraction(v.cur, fmtChunks)
@@ -113,11 +114,11 @@ func (v versionType) nextPossible() ([]string, error) {
 
 	var possible []string
 	if strings.HasPrefix(v.fmt, "%v") {
-		possible = addFmt(vParts, fmtChunks)[1:]
+		possible = addNum(vParts, fmtChunks)
 	} else {
-		possible = addNum(vParts, fmtChunks)[1:]
+		possible = addFmt(vParts, fmtChunks)
 	}
-	return possible, nil
+	return possible[1:], nil
 }
 
 type outputType struct {
