@@ -23,9 +23,9 @@ func main() {
 }
 
 type versionType struct {
-	fmt  string   `json:"fmt"`
-	cur  string   `json:"cur"`
-	past []string `json:"past"`
+	Fmt   string   `json:"fmt"`
+	Cur   string   `json:"cur"`
+	Local []string `json:"local"`
 }
 
 func addFmt(numbers []int, format []string) []string {
@@ -61,9 +61,9 @@ func addNum(numbers []int, format []string) (out []string) {
 }
 
 func (v versionType) possibleUpgrades() ([]string, error) {
-	fmtChunks := trimEmpty(strings.Split(v.fmt, "%v"))
+	fmtChunks := trimEmpty(strings.Split(v.Fmt, "%v"))
 
-	vPartsString, err := stringSubtraction(v.cur, fmtChunks)
+	vPartsString, err := stringSubtraction(v.Cur, fmtChunks)
 	if err != nil {
 		return []string{}, err
 	}
@@ -73,7 +73,7 @@ func (v versionType) possibleUpgrades() ([]string, error) {
 	}
 
 	var possible []string
-	if strings.HasPrefix(v.fmt, "%v") {
+	if strings.HasPrefix(v.Fmt, "%v") {
 		possible = addNum(vParts, fmtChunks)
 	} else {
 		possible = addFmt(vParts, fmtChunks)
