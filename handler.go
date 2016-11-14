@@ -77,31 +77,49 @@ func prefixArray(arr []string, prefix string) (out []string) {
 }
 
 func addFmt(numbers []int, format []string) []string {
-	if len(numbers) < 1 {
+	switch {
+	case len(numbers) == 0:
 		return []string{format[0]}
+	case len(format) < 2:
+		return prefixArray(addNum(numbers, []string{}), format[0])
+	default:
+		return prefixArray(addNum(numbers, format[1:]), format[0])
 	}
-	return prefixArray(addNum(numbers, format[1:]), format[0])
 }
 
 func addNum(numbers []int, format []string) (out []string) {
 	// if there is no formatting below, simply return the current number
-	if len(format) < 1 {
-		fmt.Printf("%#v %#v", "0", strconv.Itoa(numbers[0]))
+	var childParts []string
+	switch {
+	case len(format) == 0:
 		return []string{
 			"0",
-			strconv.Itoa(numbers[0]),
+			strconv.Itoa(numbers[0] + 1),
 		}
+	case len(numbers) < 2:
+		childParts = addFmt([]int{}, format)
+	default:
+		childParts = addFmt(numbers[1:], format)
 	}
 
-	childParts := addFmt(numbers[1:], format)
 	out = []string{"0" + childParts[0]}
 	out = append(out, strconv.Itoa(numbers[0]+1)+childParts[0])
 	out = append(out, prefixArray(childParts[1:], strconv.Itoa(numbers[0]))...)
 	return out
 }
 
+func trimEmpty(parts []string) []string {
+	if len(parts) > 1 && parts[0] == "" {
+		parts = parts[1:]
+	}
+	if len(parts) > 1 && parts[len(parts)-1] == "" {
+		parts = parts[:len(parts)-1]
+	}
+	return parts
+}
+
 func (v versionType) possibleUpgrades() ([]string, error) {
-	fmtChunks := strings.Split(v.fmt, "%v")
+	fmtChunks := trimEmpty(strings.Split(v.fmt, "%v"))
 
 	vPartsString, err := stringSubtraction(v.cur, fmtChunks)
 	if err != nil {

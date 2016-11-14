@@ -211,6 +211,62 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 				"memcached-1.4.34",
 			},
 			wantErr: false,
+		}, {
+			name: "simple-nosuffix",
+			fields: fields{
+				fmt:  "package-%v.%v",
+				cur:  "package-1.2",
+				past: []string{},
+			},
+			want: []string{
+				"package-2.0",
+				"package-1.3",
+			},
+			wantErr: false,
+		}, {
+			name: "simple-noprefix",
+			fields: fields{
+				fmt:  "%v.%v.tar.gz",
+				cur:  "1.2.tar.gz",
+				past: []string{},
+			},
+			want: []string{
+				"2.0.tar.gz",
+				"1.3.tar.gz",
+			},
+			wantErr: false,
+		}, {
+			name: "fourpart-normal",
+			fields: fields{
+				fmt:  "fourpart-%v.%v.%v.%v.tar.gz",
+				cur:  "fourpart-5.3.1.2.tar.gz",
+				past: []string{},
+			},
+			want: []string{
+				"fourpart-6.0.0.0.tar.gz",
+				"fourpart-5.4.0.0.tar.gz",
+				"fourpart-5.3.2.0.tar.gz",
+				"fourpart-5.3.1.3.tar.gz",
+			},
+			wantErr: false,
+		}, {
+			name: "simple-stringSubErr",
+			fields: fields{
+				fmt:  "%v.%v.tar.gz",
+				cur:  "blah-12targz",
+				past: []string{},
+			},
+			want:    []string{},
+			wantErr: true,
+		}, {
+			name: "simple-stringConvErr",
+			fields: fields{
+				fmt:  "blah-%v.%v.tar.gz",
+				cur:  "blah-t.a.tar.gz",
+				past: []string{},
+			},
+			want:    []string{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
