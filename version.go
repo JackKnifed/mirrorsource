@@ -5,23 +5,6 @@ import (
 	"strings"
 )
 
-// type sourceConfig struct {
-// 	name           string            "json:name"
-// 	upstreamDriver string            "json:type"
-// 	upstream       upstreamTarget "json:upstream"
-// 	output         []outputType      "json:specFile"
-// }
-
-// type upstreamTarget interface {
-// 	check() error
-// 	version() string
-// 	download() error
-// }
-
-func main() {
-	return
-}
-
 type versionType struct {
 	Fmt   string   `json:"fmt"`
 	Cur   string   `json:"cur"`
@@ -80,23 +63,3 @@ func (v versionType) possibleUpgrades() ([]string, error) {
 	}
 	return possible[1:], nil
 }
-
-type outputType struct {
-	active      bool   `json:"active"`
-	gitRepo     string `json:"gitRepo"`
-	location    string `json:"location"`
-	outputID    int    `json:"outputID"`
-	outputPrune int    `json:"outputPrune"`
-}
-
-type httpResponseTracker struct {
-	version versionType `json:"version"`
-	driver  string      `json:"driver"`
-	url     string      `json:"url"`
-}
-
-// func (upstream httpResponseTracker) check() error {
-
-// 	req, _ := http.NewRequest("GET", upstream.Replace(upstream.url), nil)
-
-// }
