@@ -21,7 +21,7 @@ func (action httpResponseChecker) RunVersion(s string) {
 		}
 	}
 
-	resp, err := client.Head(path.Join(action.UrlBase, s))
+	resp, err := client.Head(path.Join(action.URLBase, s))
 	if err != nil {
 		log.Println(err)
 		return
