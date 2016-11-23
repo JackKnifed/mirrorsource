@@ -7,9 +7,9 @@ import (
 
 func Test_versionType_possibleUpgrades(t *testing.T) {
 	type fields struct {
-		fmt  string
-		cur  string
-		past []string
+		Fmt   string
+		Cur   string
+		Local []string
 	}
 	tests := []struct {
 		name    string
@@ -20,9 +20,9 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 		{
 			name: "memcached-vanilla",
 			fields: fields{
-				fmt:  "memcached-%v.%v.%v.tar.gz",
-				cur:  "memcached-1.4.33.tar.gz",
-				past: []string{},
+				Fmt:   "memcached-%v.%v.%v.tar.gz",
+				Cur:   "memcached-1.4.33.tar.gz",
+				Local: []string{},
 			},
 			want: []string{
 				"memcached-2.0.0.tar.gz",
@@ -33,9 +33,9 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 		}, {
 			name: "memcached-vanilla",
 			fields: fields{
-				fmt:  "memcached-%v.%v.%v",
-				cur:  "memcached-1.4.33",
-				past: []string{},
+				Fmt:   "memcached-%v.%v.%v",
+				Cur:   "memcached-1.4.33",
+				Local: []string{},
 			},
 			want: []string{
 				"memcached-2.0.0",
@@ -46,9 +46,9 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 		}, {
 			name: "simple-nosuffix",
 			fields: fields{
-				fmt:  "package-%v.%v",
-				cur:  "package-1.2",
-				past: []string{},
+				Fmt:   "package-%v.%v",
+				Cur:   "package-1.2",
+				Local: []string{},
 			},
 			want: []string{
 				"package-2.0",
@@ -58,9 +58,9 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 		}, {
 			name: "simple-noprefix",
 			fields: fields{
-				fmt:  "%v.%v.tar.gz",
-				cur:  "1.2.tar.gz",
-				past: []string{},
+				Fmt:   "%v.%v.tar.gz",
+				Cur:   "1.2.tar.gz",
+				Local: []string{},
 			},
 			want: []string{
 				"2.0.tar.gz",
@@ -70,9 +70,9 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 		}, {
 			name: "fourpart-normal",
 			fields: fields{
-				fmt:  "fourpart-%v.%v.%v.%v.tar.gz",
-				cur:  "fourpart-5.3.1.2.tar.gz",
-				past: []string{},
+				Fmt:   "fourpart-%v.%v.%v.%v.tar.gz",
+				Cur:   "fourpart-5.3.1.2.tar.gz",
+				Local: []string{},
 			},
 			want: []string{
 				"fourpart-6.0.0.0.tar.gz",
@@ -84,18 +84,18 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 		}, {
 			name: "simple-stringSubErr",
 			fields: fields{
-				fmt:  "%v.%v.tar.gz",
-				cur:  "blah-12targz",
-				past: []string{},
+				Fmt:   "%v.%v.tar.gz",
+				Cur:   "blah-12targz",
+				Local: []string{},
 			},
 			want:    []string{},
 			wantErr: true,
 		}, {
 			name: "simple-stringConvErr",
 			fields: fields{
-				fmt:  "blah-%v.%v.tar.gz",
-				cur:  "blah-t.a.tar.gz",
-				past: []string{},
+				Fmt:   "blah-%v.%v.tar.gz",
+				Cur:   "blah-t.a.tar.gz",
+				Local: []string{},
 			},
 			want:    []string{},
 			wantErr: true,
@@ -104,9 +104,9 @@ func Test_versionType_possibleUpgrades(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := versionType{
-				fmt:  tt.fields.fmt,
-				cur:  tt.fields.cur,
-				past: tt.fields.past,
+				Fmt:   tt.fields.Fmt,
+				Cur:   tt.fields.Cur,
+				Local: tt.fields.Local,
 			}
 			got, err := v.possibleUpgrades()
 			if (err != nil) != tt.wantErr {
