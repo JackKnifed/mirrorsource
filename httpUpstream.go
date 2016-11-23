@@ -9,21 +9,19 @@ type httpResponseTracker struct {
 	Version versionType `json:"version"`
 	UrlBase string      `json:"urlBase"`
 	Follow  bool        `json:"follow"`
+	Actions []upstreamTarget{}
 }
 
-func (upstream httpResponseTracker) check() error {
+func (upstream httpResponseTracker) RunVersion(versionString string) error {
 	client := &http.Client{}
 	if upstream.Follow {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
-		}()
-	}
-	versions, err := upstream.possibleUpgrades()
-	for _, each := range urls {
-		resp, err := client.Head(path.Join(upstream.UrlBase, each))
-		if resp.Code == http.StatusOK {
-			upstream.Update(each)
-
 		}
+	}
+
+	resp, err := client.Head(path.Join(upstream.UrlBase, versionString))
+	if resp.Code == http.StatusOK {
+		upstream.Update(each)
 	}
 }
