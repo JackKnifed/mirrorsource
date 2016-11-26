@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -61,4 +62,13 @@ func trimEmpty(parts []string) []string {
 		parts = parts[:len(parts)-1]
 	}
 	return parts
+}
+
+func translateFormat(s, oldFmt, newFmt string) (string, error) {
+	fmtChunks := trimEmpty(strings.Split(oldFmt, "%v"))
+	vPartsString, err := stringSubtraction(s, fmtChunks)
+	if err != nil {
+		return "", errors.New("string does not match format")
+	}
+	return fmt.Sprintf(newFmt, vPartsString), nil
 }
