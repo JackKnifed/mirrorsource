@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -131,27 +130,9 @@ func (action httpDownload) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		const pageList = `
-<html>
-	<head>
-		<title>{{ .DisplayName }}</title>
-	</head>
-	<body>
-		<h2>{{ .DisplayName }}</h2>
 
-		<a href="../">Up</a>
-
-		{{range .localVersions }}
-		<a href=".Address">.Address</a>
-		{{end}}
-
-	</body>
-</html>
-`
-
-		t := template.Must(template.New("listing").Parse(pageList))
 		action.localVersions = files
-		err = t.Execute(w, action)
+		err = templates.Lookup("packageList").Execute(w, action)
 		if err != nil {
 			log.Printf("problem listing files - %s - %v", r.URL.Path, err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
