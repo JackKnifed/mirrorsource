@@ -11,18 +11,18 @@ import (
 )
 
 type URLTarget struct {
-	lock         sync.RWMutex
-	finished     sync.WaitGroup
-	errCh        chan<- error
-	Src          string
-	SrcFmt       string
-	FileLoc      string
-	BaseFmt      string
-	VerifyAction interface{}
-	PostAction   interface{}
+	lock          sync.RWMutex
+	finished      sync.WaitGroup
+	errCh         chan<- error
+	Src           string
+	SrcFmt        string
+	FileLoc       string
+	BaseFmt       string
+	VerifyActions []VerifyAction
+	PostActions   []PostAction
 }
 
-func (t *URLTarget) GetFile(URL string) string {
+func (t *URLTarget) GetBasename(URL string) string {
 	if URL == "" {
 		URL = t.Src
 	}
@@ -33,7 +33,7 @@ func (t *URLTarget) GetFile(URL string) string {
 		t.errCh <- fmt.Errorf("problem parsing format - %v", err)
 	}
 
-	return filepath.Join(t.FileLoc, fmt.Sprintf(t.BaseFmt, curVer...))
+	return fmt.Sprintf(t.BaseFmt, curVer...)
 }
 
 func (t *URLTarget) Check() {
@@ -114,19 +114,22 @@ func (t *URLTarget) GetURL(URL string) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	defer t.finished.Done()
-	var removeFile bool
 
-	f, err := os.OpenFile(t.GetFile(URL), os.O_CREATE|os.O_WRONLY, 0640)
+	f, err := os.OpenFile(
+		filepath.Join(t.FileLoc, t.GetBasename(URL)),
+		os.O_CREATE|os.O_WRONLY, 0640)
 	if err == os.ErrExist {
 		t.errCh <- fmt.Errorf("download target already pulled - %s - %s",
-			URL, t.GetFile(URL))
+			URL, t.GetBasename(URL))
 		return
 	}
 	if err != nil {
 		t.errCh <- fmt.Errorf("failed to open location for writing - %s - %v",
-			t.GetFile(URL), err)
+			t.GetBasename(URL), err)
 		return
 	}
+
+	var removeFile bool
 	defer func() {
 		name := f.Name()
 		err := f.Close()
@@ -151,5 +154,14 @@ func (t *URLTarget) GetURL(URL string) {
 		t.errCh <- fmt.Errorf("failed to download file - %v", err)
 		removeFile = true
 	}
-}
 
+	for _, verify := range t.VerifyActions {
+		if !verify.Verify(t.GetBasename(URL)) {
+			removeFile = true
+		}
+	}
+
+	for _, post := range t.PostActions {
+		post.Process()
+	}
+}
