@@ -10,36 +10,30 @@ import (
 	"unicode/utf8"
 )
 
-type Target interface {
-	Check(chan<- error)
-	Latest() string
-	List() []string
-}
-
 type URLTarget struct {
 	lock         sync.RWMutex
 	finished     sync.WaitGroup
 	errCh        chan<- error
-	URL          string
-	URLFmt       string
+	Src          string
+	SrcFmt       string
 	FileLoc      string
-	FileFmt      string
+	BaseFmt      string
 	VerifyAction interface{}
 	PostAction   interface{}
 }
 
-func (t *URLTarget) ConvertToFile(URL string) string {
+func (t *URLTarget) GetFile(URL string) string {
 	if URL == "" {
-		URL = t.URL
+		URL = t.Src
 	}
 
 	var curVer []interface{}
-	_, err := fmt.Scanf(t.URLFmt, curVer...)
+	_, err := fmt.Sscanf(URL, t.SrcFmt, curVer...)
 	if err != nil {
 		t.errCh <- fmt.Errorf("problem parsing format - %v", err)
 	}
 
-	return filepath.Join(t.FileLoc, fmt.Sprintf(t.FileFmt, curVer...))
+	return filepath.Join(t.FileLoc, fmt.Sprintf(t.BaseFmt, curVer...))
 }
 
 func (t *URLTarget) Check() {
@@ -49,7 +43,7 @@ func (t *URLTarget) Check() {
 	defer t.finished.Done()
 
 	var curVer []interface{}
-	_, err := fmt.Scanf(t.URLFmt, curVer...)
+	_, err := fmt.Sscanf(t.Src, t.SrcFmt, curVer...)
 	if err != nil {
 		t.errCh <- fmt.Errorf("problem parsing format - %v", err)
 	}
@@ -59,7 +53,7 @@ func (t *URLTarget) Check() {
 		checkVer[i] = t.incrementPoint(checkVer[i])
 		// launch a check for every next version
 		t.finished.Add(1)
-		go t.PokeURL(fmt.Sprintf(t.URLFmt, checkVer...))
+		go t.PokeURL(fmt.Sprintf(t.SrcFmt, checkVer...))
 		// reset it to it's deafut for the next run
 		checkVer[i] = t.resetPoint(checkVer[i])
 	}
@@ -109,7 +103,7 @@ func (t *URLTarget) PokeURL(URL string) {
 		t.errCh <- fmt.Errorf("problem checking %s - %v", URL, err)
 		return
 	}
-	// need some better checks to see what to do about sites that redirect newer stuff to the latest
+	// TODO: need some better checks to see what to do about sites that redirect newer stuff to the latest
 	if resp.StatusCode == http.StatusFound {
 		t.finished.Add(1)
 		go t.GetURL(URL)
@@ -122,15 +116,15 @@ func (t *URLTarget) GetURL(URL string) {
 	defer t.finished.Done()
 	var removeFile bool
 
-	f, err := os.OpenFile(t.ConvertToFile(URL), os.O_CREATE|os.O_WRONLY, 0640)
+	f, err := os.OpenFile(t.GetFile(URL), os.O_CREATE|os.O_WRONLY, 0640)
 	if err == os.ErrExist {
 		t.errCh <- fmt.Errorf("download target already pulled - %s - %s",
-			URL, t.ConvertToFile(URL))
+			URL, t.GetFile(URL))
 		return
 	}
 	if err != nil {
 		t.errCh <- fmt.Errorf("failed to open location for writing - %s - %v",
-			t.ConvertToFile(URL), err)
+			t.GetFile(URL), err)
 		return
 	}
 	defer func() {
@@ -159,10 +153,3 @@ func (t *URLTarget) GetURL(URL string) {
 	}
 }
 
-type VerifyAction interface {
-	Verify() (bool, error)
-}
-
-type PostAction interface {
-	Process() error
-}
