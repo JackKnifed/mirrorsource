@@ -1,9 +1,11 @@
-package main
+package mirrorsource
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"unicode/utf8"
 )
@@ -19,7 +21,7 @@ type URLTarget struct {
 	finished     sync.WaitGroup
 	errCh        chan<- error
 	URL          string
-	URLFormat    string
+	URLFmt       string
 	FileLoc      string
 	FileFmt      string
 	VerifyAction interface{}
@@ -32,12 +34,12 @@ func (t *URLTarget) ConvertToFile(URL string) string {
 	}
 
 	var curVer []interface{}
-	_, err := fmt.Scanf(t.URLFormat, curVer...)
+	_, err := fmt.Scanf(t.URLFmt, curVer...)
 	if err != nil {
 		t.errCh <- fmt.Errorf("problem parsing format - %v", err)
 	}
 
-	return fmt.Sprintf(t.FileFmt, curVer...)
+	return filepath.Join(t.FileLoc, fmt.Sprintf(t.FileFmt, curVer...))
 }
 
 func (t *URLTarget) Check() {
@@ -47,7 +49,7 @@ func (t *URLTarget) Check() {
 	defer t.finished.Done()
 
 	var curVer []interface{}
-	_, err := fmt.Scanf(t.URLFormat, curVer...)
+	_, err := fmt.Scanf(t.URLFmt, curVer...)
 	if err != nil {
 		t.errCh <- fmt.Errorf("problem parsing format - %v", err)
 	}
@@ -57,7 +59,7 @@ func (t *URLTarget) Check() {
 		checkVer[i] = t.incrementPoint(checkVer[i])
 		// launch a check for every next version
 		t.finished.Add(1)
-		go t.PokeURL(fmt.Sprintf(t.URLFormat, checkVer...))
+		go t.PokeURL(fmt.Sprintf(t.URLFmt, checkVer...))
 		// reset it to it's deafut for the next run
 		checkVer[i] = t.resetPoint(checkVer[i])
 	}
@@ -83,7 +85,7 @@ func (t *URLTarget) incrementPoint(in interface{}) interface{} {
 }
 
 func (t *URLTarget) resetPoint(in interface{}) interface{} {
-	switch val := in.(type) {
+	switch in.(type) {
 	case bool:
 		return false
 	case int:
@@ -118,12 +120,43 @@ func (t *URLTarget) GetURL(URL string) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	defer t.finished.Done()
+	var removeFile bool
 
 	f, err := os.OpenFile(t.ConvertToFile(URL), os.O_CREATE|os.O_WRONLY, 0640)
-	if err != nil {
-
+	if err == os.ErrExist {
+		t.errCh <- fmt.Errorf("download target already pulled - %s - %s",
+			URL, t.ConvertToFile(URL))
+		return
 	}
+	if err != nil {
+		t.errCh <- fmt.Errorf("failed to open location for writing - %s - %v",
+			t.ConvertToFile(URL), err)
+		return
+	}
+	defer func() {
+		name := f.Name()
+		err := f.Close()
+		if err != nil || removeFile {
+			t.errCh <- fmt.Errorf("hit an error closing or previous error - %v", err)
+			err := os.Remove(name)
+			if err != nil {
+				t.errCh <- fmt.Errorf("problem removing the file - %v", err)
+			}
+		}
+	}()
 
+	resp, err := http.Get(URL)
+	if err != nil {
+		t.errCh <- fmt.Errorf("failed to get target %s - %v", URL, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		t.errCh <- fmt.Errorf("failed to download file - %v", err)
+		removeFile = true
+	}
 }
 
 type VerifyAction interface {
