@@ -8,9 +8,11 @@ import (
 )
 
 type Version struct {
-	lock sync.RWMutex
-	fmt  string
-	val  []interface{}
+	lock   sync.RWMutex
+	fmt    string
+	val    []interface{}
+	norm   []Action
+	revert []Action
 }
 
 func DecodeVersion(format string, encoded string) (*Version, error) {
@@ -67,7 +69,10 @@ func resetInterface(in interface{}) (interface{}, error) {
 }
 
 // not sure if this should be a method of versions or if it should be it's own function
-func IncrementVersion(v *Version) ([]*Version, error) {
+func (v *Version) IncrementVersion() ([]*Version, error) {
+	v.lock.RLock()
+	defer v.lock.RUnlock()
+
 	checkVer := v.val[:]
 	nextVers := []*Version{}
 	var err error
