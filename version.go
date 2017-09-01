@@ -10,7 +10,7 @@ import (
 type Version interface {
 	String() string
 	Format(string) string
-	IncrementVersion() ([]Version, error)
+	NextVersions() ([]Version, error)
 	AddAction(Action)
 	AddRevertAction(Action)
 }
@@ -77,7 +77,7 @@ func resetInterface(in interface{}) (interface{}, error) {
 }
 
 // not sure if this should be a method of versions or if it should be it's own function
-func (v *versionObj) IncrementVersion() ([]*versionObj, error) {
+func (v *versionObj) NextVersions() ([]*versionObj, error) {
 	v.lock.RLock()
 	defer v.lock.RUnlock()
 
