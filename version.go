@@ -7,7 +7,13 @@ import (
 	"unicode/utf8"
 )
 
-type Version struct {
+type Version interface {
+	String() string
+	Format(string) string
+	IncrementVersion() ([]Version, error)
+}
+
+type versionObj struct {
 	lock   sync.RWMutex
 	fmt    string
 	val    []interface{}
@@ -15,8 +21,8 @@ type Version struct {
 	revert []Action
 }
 
-func DecodeVersion(format string, encoded string) (*Version, error) {
-	retVal := &Version{fmt: format}
+func DecodeVersion(format string, encoded string) (*versionObj, error) {
+	retVal := &versionObj{fmt: format}
 	_, err := fmt.Sscanf(retVal.fmt, encoded, retVal.val...)
 	if err != nil {
 		return nil, err
@@ -24,13 +30,13 @@ func DecodeVersion(format string, encoded string) (*Version, error) {
 	return retVal, nil
 }
 
-func (v *Version) String() string {
+func (v *versionObj) String() string {
 	v.lock.RLock()
 	defer v.lock.RUnlock()
 	return fmt.Sprintf(v.fmt, v.val...)
 }
 
-func (v *Version) Format(f string) string {
+func (v *versionObj) Format(f string) string {
 	v.lock.RLock()
 	defer v.lock.RUnlock()
 	return fmt.Sprintf(f, v.val...)
@@ -69,12 +75,12 @@ func resetInterface(in interface{}) (interface{}, error) {
 }
 
 // not sure if this should be a method of versions or if it should be it's own function
-func (v *Version) IncrementVersion() ([]*Version, error) {
+func (v *versionObj) IncrementVersion() ([]*versionObj, error) {
 	v.lock.RLock()
 	defer v.lock.RUnlock()
 
 	checkVer := v.val[:]
-	nextVers := []*Version{}
+	nextVers := []*versionObj{}
 	var err error
 
 	for i := len(checkVer) - 1; i >= 0; i-- {
@@ -83,7 +89,7 @@ func (v *Version) IncrementVersion() ([]*Version, error) {
 			return nil, err
 		}
 		// add that version to the return stuff
-		nextVers = append(nextVers, &Version{fmt: v.fmt, val: checkVer})
+		nextVers = append(nextVers, &versionObj{fmt: v.fmt, val: checkVer})
 		// reset it to it's deafut for the next run
 		checkVer[i], err = resetInterface(checkVer[i])
 		if err != nil {
