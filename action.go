@@ -13,7 +13,7 @@ import (
 )
 
 type Action interface {
-	Do(*versionObj) error
+	Do(Version) error
 }
 
 type Sha1Verify struct {
@@ -64,7 +64,8 @@ func (a *Md5Verify) Do(v Version) error {
 	filename := filepath.Join(a.FileLoc, v.Format(a.FileFmt))
 	f, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("failed to open [%s] for checksumming - %v", filename, err)
+		return fmt.Errorf("failed to open [%s] for checksumming - %v",
+			filename, err)
 	}
 	defer f.Close()
 
@@ -110,5 +111,58 @@ func (a *CheckURL) Do(v Version) error {
 
 type GetURL struct {
 	URLFmt string
-	Output io.Writer
+	Output io.WriteCloser
+}
+
+func (a *GetURL) Do(v Version) error {
+	resp, err := http.DefaultClient.Get(v.Format(a.URLFmt))
+	if err != nil {
+		return fmt.Errorf("problem retrieving %s - %v",
+			v.Format(a.URLFmt), err)
+	}
+	if resp.StatusCode != http.StatusFound {
+		resp.Body.Close()
+		return fmt.Errorf("problem retrieving %s - %d status",
+			v.String(), resp.StatusCode)
+	}
+
+	go func() {
+		defer a.Output.Close()
+		defer resp.Body.Close()
+		io.Copy(a.Output, resp.Body)
+	}()
+
+	return nil
+}
+
+type SaveFile struct {
+	FileLoc string
+	FileFmt string
+	Perm    os.FileMode
+	In      io.ReadCloser
+}
+
+func (a *SaveFile) Do(v Version) error {
+	defer a.In.Close()
+	f, err := os.OpenFile(filepath.Join(a.FileLoc, v.Format(a.FileFmt)),
+		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, a.Perm)
+	if err != nil {
+		return fmt.Errorf("problem opening file %s - %v",
+			filepath.Join(a.FileLoc, v.Format(a.FileFmt)), err)
+	}
+	defer f.Close()
+	v.AddRevertAction(&RemoveFile{FileLoc: a.FileLoc, FileFmt: a.FileFmt})
+	_, err = io.Copy(f, a.In)
+	return err
+}
+
+type RemoveFile struct {
+	FileLoc string
+	FileFmt string
+	In      io.ReadCloser
+}
+
+func (a *RemoveFile) Do(v Version) error {
+	err := os.Remove(filepath.Join(a.FileLoc, v.Format(a.FileFmt)))
+	return err
 }

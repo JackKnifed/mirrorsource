@@ -11,6 +11,8 @@ type Version interface {
 	String() string
 	Format(string) string
 	IncrementVersion() ([]Version, error)
+	AddAction(Action)
+	AddRevertAction(Action)
 }
 
 type versionObj struct {
@@ -98,4 +100,12 @@ func (v *versionObj) IncrementVersion() ([]*versionObj, error) {
 	}
 
 	return nextVers, nil
+}
+
+func (v *versionObj) AddAction(a Action) {
+	v.revert = append([]Action{a}, v.revert...)
+}
+
+func (v *versionObj) AddRevertAction(a Action) {
+	v.revert = append([]Action{a}, v.revert...)
 }
