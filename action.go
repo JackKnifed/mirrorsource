@@ -13,7 +13,7 @@ import (
 )
 
 type Action interface {
-	Do(*Version) error
+	Do(*versionObj) error
 }
 
 type Sha1Verify struct {
@@ -22,7 +22,7 @@ type Sha1Verify struct {
 	HashURLFmt string
 }
 
-func (a *Sha1Verify) Do(v *Version) error {
+func (a *Sha1Verify) Do(v Version) error {
 	filename := filepath.Join(a.FileLoc, v.Format(a.FileFmt))
 	f, err := os.Open(filename)
 	if err != nil {
@@ -60,7 +60,7 @@ type Md5Verify struct {
 	HashURLFmt string
 }
 
-func (a *Md5Verify) Do(v *Version) error {
+func (a *Md5Verify) Do(v Version) error {
 	filename := filepath.Join(a.FileLoc, v.Format(a.FileFmt))
 	f, err := os.Open(filename)
 	if err != nil {
