@@ -91,3 +91,24 @@ func (a *Md5Verify) Do(v Version) error {
 	}
 	return nil
 }
+
+type CheckURL struct {
+	URLFmt string
+}
+
+func (a *CheckURL) Do(v Version) error {
+	resp, err := http.DefaultClient.Head(v.Format(a.URLFmt))
+	if err != nil {
+		return fmt.Errorf("problem checking %s - %v", v.Format(a.URLFmt), err)
+	}
+	// TODO: need some better checks to see what to do about sites that redirect newer stuff to the latest
+	if resp.StatusCode != http.StatusFound {
+		return fmt.Errorf("%s not found", v.String())
+	}
+	return nil
+}
+
+type GetURL struct {
+	URLFmt string
+	Output io.Writer
+}
