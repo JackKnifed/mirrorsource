@@ -169,13 +169,10 @@ func (a *RemoveFile) Do(v Version) error {
 
 type NextVersions struct{}
 
-// func (a *NextVersions) Do(v Version) error {
-// 	versions, err := v.NextVersions()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	actions := v.ExportActions()
-// 	reverts := v.ExportRevertActions()
-
-// 	for each
-// }
+func (a *NextVersions) Do(v Version) error {
+	err := v.NextVersions()
+	if err != nil {
+		return err
+	}
+	return nil
+}
